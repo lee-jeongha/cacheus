@@ -251,6 +251,40 @@ class CloudPhysics(Trace):
             yield lba + offset, write, ts_hour
 
 
+class STrace(Trace):
+    def inDuration(self, time):
+        if self.duration == 0:
+            return True
+
+        if self.start_time == 0:
+            self.start_time = time
+            self.end_time = time + (self.duration * 60 * 60)
+
+        return time < self.end_time
+
+    def tickHour(self, time):
+        return int(time)/3600
+
+    def readLine(self, line):
+        line = line.split(',')
+
+        #------
+        ts = int(float(line[1]))
+        #pid = int(line[2])
+        write = line[3][0] == 'w'
+        uniq_blknum = int(line[4])
+        #inode = int(line[5])
+        #file_offset = int(line[6]) #offset in file
+        #------
+
+        if not self.inDuration(ts):
+            raise EOFError("End of duration")
+
+        ts_hour = self.tickHour(ts)
+
+        yield uniq_blknum, write, ts_hour
+
+
 def get_trace_reader(trace_type):
     trace_type = trace_type.lower()
     if trace_type == 'fiu':
@@ -267,6 +301,8 @@ def get_trace_reader(trace_type):
         return SynthTrace
     if trace_type == 'physics':
         return CloudPhysics
+    if trace_type == 'strace':
+        return STrace
     raise ValueError("Could not find trace reader for {}".format(trace_type))
 
 
@@ -274,6 +310,8 @@ def identify_trace(filename):
     if filename.endswith('.blkparse'):
         return 'fiu'
     if filename.endswith('.csv'):
+        if filename.endswith('.strace.csv'):
+            return 'strace'
         return 'msr'
     if filename.endswith('.blk'):
         return 'visa'

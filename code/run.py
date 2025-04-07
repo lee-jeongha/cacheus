@@ -172,7 +172,7 @@ if __name__ == '__main__':
                 cache_size_label = cache_size
                 cache_size_label_type = 'size'
                 if isinstance(cache_size, float):
-                    cache_size = math.floor(cache_size * count)
+                    cache_size = round(cache_size * count) #math.floor(cache_size * count)
                     cache_size_label_type = config['request_count_type']
                 if cache_size < 10:
                     print(
